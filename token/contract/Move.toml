@@ -6,6 +6,4 @@ version = "0.0.0"
 AptosStdlib = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-stdlib", rev = "main" }
 
 [addresses]
-std = "0x1"
-aptos_std = "0x1"
 NamedAddr =  "_"

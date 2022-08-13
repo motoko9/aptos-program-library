@@ -87,7 +87,7 @@ module NamedAddr::usdc {
             coin:  Coin { value: 0 },
             deposit_events: event::new_event_handle<DepositEvent>(account),
             withdraw_events: event::new_event_handle<WithdrawEvent>(account),
-        }
+        };
         move_to(account, coin_store);
     }
 
@@ -115,16 +115,30 @@ module NamedAddr::usdc {
         let balance = balance_of(addr);
         // balance must be greater than the withdraw amount
         assert!(balance >= amount, EINSUFFICIENT_BALANCE);
-        let balance_ref = &mut borrow_global_mut<CoinStore>(addr).coin.value;
+
+        let coin_store = borrow_global_mut<CoinStore>(addr);
+        event::emit_event<WithdrawEvent>(
+            &mut coin_store.withdraw_events,
+            WithdrawEvent { amount },
+        );
+
+        let balance_ref = &mut coin_store.coin.value;
         *balance_ref = balance - amount;
         Coin { value: amount }
     }
 
     /// Deposit `amount` number of tokens to the balance under `addr`.
     fun deposit(addr: address, check: Coin) acquires CoinStore{
-        let balance = balance_of(addr);
-        let balance_ref = &mut borrow_global_mut<CoinStore>(addr).coin.value;
         let Coin { value } = check;
+        let balance = balance_of(addr);
+        //
+        let coin_store = borrow_global_mut<CoinStore>(addr);
+        event::emit_event<DepositEvent>(
+            &mut coin_store.deposit_events,
+            DepositEvent { amount : value },
+        );
+
+        let balance_ref = &mut coin_store.coin.value;
         *balance_ref = balance + value;
     }
 
