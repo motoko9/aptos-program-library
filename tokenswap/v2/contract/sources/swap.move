@@ -60,7 +60,7 @@ module NamedAddr::swap {
             mint: mint_cap,
             burn: burn_cap,
             freeze: freeze_cap,
-        })
+        });
     }
 
     fun get_reserves<CoinType1: drop + store, CoinType2: drop + store>(): (u64, u64) acquires LiquidityPool {
@@ -133,7 +133,7 @@ module NamedAddr::swap {
        coin::deposit(signer::address_of(account), coin2_out);
     }
 
-    // need safesmath
+    // need safessmath
     // todo
     fun quote(amount_x: u64, reserve_x: u64, reserve_y: u64): u64 {
         let amount_y = mul_div(amount_x, reserve_y, reserve_x);
