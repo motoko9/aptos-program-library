@@ -2,6 +2,7 @@
 module NamedAddr::usdc {
     use std::signer;
     use std::string;
+    use aptos_framework::account;
     use aptos_std::event;
 
     /// Address of the owner of this module
@@ -81,18 +82,18 @@ module NamedAddr::usdc {
 
     /// Publish an empty balance resource under `account`'s address. This function must be called before
     /// minting or transferring to the account.
-    public fun register(account: &signer) {
+    public entry fun register(account: &signer) {
         assert!(!exists<CoinStore>(signer::address_of(account)), EALREADY_HAS_BALANCE);
         let coin_store = CoinStore {
             coin:  Coin { value: 0 },
-            deposit_events: event::new_event_handle<DepositEvent>(account),
-            withdraw_events: event::new_event_handle<WithdrawEvent>(account),
+            deposit_events: account::new_event_handle<DepositEvent>(account),
+            withdraw_events: account::new_event_handle<WithdrawEvent>(account),
         };
         move_to(account, coin_store);
     }
 
     /// Mint `amount` tokens to `mint_addr`. Mint must be approved by the module owner.
-    public fun mint(account: &signer, to: address, amount: u64) acquires CoinStore, CoinInfo {
+    public entry fun mint(account: &signer, to: address, amount: u64) acquires CoinStore, CoinInfo {
         // Only the owner of the module can initialize this module
         assert!(signer::address_of(account) == MODULE_OWNER, ENOT_MODULE_OWNER);
 
@@ -105,7 +106,7 @@ module NamedAddr::usdc {
     }
 
     /// Transfers `amount` of tokens from `from` to `to`.
-    public fun transfer(from: &signer, to: address, amount: u64) acquires CoinStore {
+    public entry fun transfer(from: &signer, to: address, amount: u64) acquires CoinStore {
         let check = withdraw(signer::address_of(from), amount);
         deposit(to, check);
     }
@@ -145,7 +146,7 @@ module NamedAddr::usdc {
     /// Creates a new Coin and returns minting/burning capabilities.
     /// The given signer also becomes the account hosting the information
     /// about the coin (name, supply, etc.).
-    public fun initialize(account: &signer, name: string::String, symbol: string::String, decimals: u64) {
+    public entry fun initialize(account: &signer, name: string::String, symbol: string::String, decimals: u64) {
         // Only the owner of the module can initialize this module
         assert!(signer::address_of(account) == MODULE_OWNER, ENOT_MODULE_OWNER);
 

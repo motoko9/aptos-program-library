@@ -1,5 +1,5 @@
 [package]
-name = "usdc"
+name = "helloworld"
 version = "0.0.0"
 
 [dependencies]

@@ -1,3 +1,3 @@
 module NamedAddr::usdt {
-    struct USDTCoin {}
+    struct USDT {}
 }
