@@ -242,6 +242,9 @@ one user: 0x4a519d3be650792b231a3a7df67ac0dae825253a5dda929e111dbe46f78f1e49
 
 ## ceate pool
 
+[create pool](./test-go/swap_createpool_test.go)
+
+create pool transaction: 0xf00f92c5543e577006de36e832491146c42a22af97080d41543de70bec39dd56
 
 ## add liquidity
 
