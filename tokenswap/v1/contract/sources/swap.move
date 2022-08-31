@@ -16,7 +16,7 @@ module NamedAddr::swap {
         share: u64,
     }
 
-    public entry fun create_pool<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
+    public entry fun create_pool<CoinType1, CoinType2, LpType>(
         requester: &signer,
         coinswap: &signer,
         coin1: u64,
@@ -27,8 +27,9 @@ module NamedAddr::swap {
         assert!(coinswap_addr == Owner, error::invalid_argument(ERROR_COINSWAP_ADDRESS));
         assert!(!exists<LiquidityPool<CoinType1, CoinType2>>(coinswap_addr), error::already_exists(ERROR_POOL));
         // Create a pool at @CoinSwap.
-        coin::balance<CoinType1>(coinswap_addr);
-        coin::balance<CoinType2>(coinswap_addr);
+        // error if coin is not registered
+        // coin::balance<CoinType1>(coinswap_addr);
+        // coin::balance<CoinType2>(coinswap_addr);
         move_to(coinswap, LiquidityPool<CoinType1, CoinType2>{
             coin1,
             coin2,
@@ -36,10 +37,17 @@ module NamedAddr::swap {
         });
 
         // Transfer the initial liquidity of CoinType1 and CoinType2 to the pool under @CoinSwap.
+        if (!coin::is_account_registered<CoinType1>(coinswap_addr)) {
+            managed_coin::register<CoinType1>(coinswap);
+        };
         coin::transfer<CoinType1>(requester, coinswap_addr, coin1);
+
+        if (!coin::is_account_registered<CoinType2>(coinswap_addr)) {
+            managed_coin::register<CoinType2>(coinswap);
+        };
         coin::transfer<CoinType2>(requester, coinswap_addr, coin2);
 
-        // Mint PoolToken to requester.
+        // Mint lp token to requester.
         if (!coin::is_account_registered<LpType>(signer::address_of(requester))) {
             managed_coin::register<LpType>(requester);
         };
@@ -53,7 +61,7 @@ module NamedAddr::swap {
         numerator / denominator
     }
 
-    public entry fun coin1_to_coin2_swap_input<CoinType1: drop + store, CoinType2: drop + store> (
+    public entry fun coin1_to_coin2_swap_input<CoinType1, CoinType2> (
         requester: &signer,
         coinswap: &signer,
         coin1: u64
@@ -69,11 +77,18 @@ module NamedAddr::swap {
         pool.coin2 = pool.coin2 - coin2;
 
         //
+        if (!coin::is_account_registered<CoinType1>(coinswap_addr)) {
+            managed_coin::register<CoinType1>(coinswap);
+        };
         coin::transfer<CoinType1>(requester, coinswap_addr, coin1);
+
+        if (!coin::is_account_registered<CoinType2>(signer::address_of(requester))) {
+            managed_coin::register<CoinType2>(requester);
+        };
         coin::transfer<CoinType2>(coinswap, signer::address_of(requester), coin2);
     }
 
-    public entry fun add_liquidity<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
+    public entry fun add_liquidity<CoinType1, CoinType2, LpType>(
         requester: &signer,
         coinswap: &signer,
         coin1: u64,
@@ -102,16 +117,24 @@ module NamedAddr::swap {
         pool.share = pool.share + share_minted;
 
         //
+        if (!coin::is_account_registered<CoinType1>(coinswap_addr)) {
+            managed_coin::register<CoinType1>(coinswap);
+        };
         coin::transfer<CoinType1>(requester, coinswap_addr, coin1_added);
+
+        if (!coin::is_account_registered<CoinType2>(coinswap_addr)) {
+            managed_coin::register<CoinType2>(coinswap);
+        };
         coin::transfer<CoinType2>(requester, coinswap_addr, coin2_added);
-        // Mint PoolToken to requester.
+
+        // Mint lp token to requester.
         if (!coin::is_account_registered<LpType>(signer::address_of(requester))) {
             managed_coin::register<LpType>(requester);
         };
         managed_coin::mint<LpType>(coinswap, signer::address_of(requester), share_minted);
     }
 
-    public entry fun remove_liquidity<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
+    public entry fun remove_liquidity<CoinType1, CoinType2, LpType>(
         requester: &signer,
         coinswap: &signer,
         share: u64,     
@@ -129,8 +152,17 @@ module NamedAddr::swap {
         pool.share = pool.share - share;
 
         //
+        if (!coin::is_account_registered<CoinType1>(signer::address_of(requester))) {
+            managed_coin::register<CoinType1>(requester);
+        };
         coin::transfer<CoinType1>(coinswap, signer::address_of(requester), coin1_removed);
+
+        if (!coin::is_account_registered<CoinType2>(signer::address_of(requester))) {
+            managed_coin::register<CoinType2>(requester);
+        };
         coin::transfer<CoinType2>(coinswap, signer::address_of(requester), coin2_removed);
+
+        // burn lp token
         managed_coin::burn<LpType>(requester, share);
     }
 }
