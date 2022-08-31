@@ -19,32 +19,50 @@ func TestCreatePool(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	address := swapWallet.Address()
-	fmt.Printf("move rpcmodule address: %s\n", address)
+	swapAddress := swapWallet.Address()
+	fmt.Printf("swap module address: %s\n", swapAddress)
+
+	// user account
+	userWallet, err := wallet.NewFromKeygenFile("account_user")
+	if err != nil {
+		panic(err)
+	}
+	userAddress := userWallet.Address()
+	fmt.Printf("user address: %s\n", userAddress)
 
 	// new rpc
 	client := aptos.New(rpc.DevNet_RPC)
 
-	// from account
-	account, aptosErr := client.Account(ctx, address, 0)
+	// user account
+	userAccount, aptosErr := client.Account(ctx, userAddress, 0)
 	if aptosErr != nil {
 		panic(aptosErr)
 	}
+
+	/*
+	userAccount, aptosErr := client.Account(ctx, userAddress, 0)
+	if aptosErr != nil {
+		panic(aptosErr)
+	}
+	 */
 
 	// create pool
 	coin1 := aptos.CoinType[aptos.AptosCoin]
 	coin2 := aptos.CoinType[aptos.USDTCoin]
 	payload := rpcmodule.TransactionPayloadEntryFunctionPayload{
 		Type:          "entry_function_payload",
-		Function:      fmt.Sprintf("%s::swap::create_pool", address),
+		Function:      fmt.Sprintf("%s::swap::create_pool", swapAddress),
 		TypeArguments: []string{coin1, coin2},
 		Arguments:     []interface{}{},
 	}
-	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionReq(
-		address, account.SequenceNumber, rpcmodule.TransactionPayload{
+	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
+		userAddress, userAccount.SequenceNumber,
+		rpcmodule.TransactionPayload{
 			Type:   "entry_function_payload",
 			Object: payload,
-		})
+		},
+		[]string{swapAddress},
+		)
 	if err != nil {
 		panic(err)
 	}
@@ -56,18 +74,40 @@ func TestCreatePool(t *testing.T) {
 	}
 
 	// sign
-	signature, err := swapWallet.Sign(signData)
+	signature1, err := userWallet.Sign(signData)
+	if err != nil {
+		panic(err)
+	}
+
+	signature2, err := swapWallet.Sign(signData)
 	if err != nil {
 		panic(err)
 	}
 
 	// add signature
-	submitReq, err := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.AccountSignature{
-		Type: "ed25519_signature",
-		Object: rpcmodule.AccountSignatureEd25519Signature{
-			Type:      "ed25519_signature",
-			PublicKey: "0x" + swapWallet.PublicKey().String(),
-			Signature: "0x" + hex.EncodeToString(signature),
+	submitReq, err := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.Signature{
+		Type: rpcmodule.MultiAgentSignature,
+		Object: rpcmodule.SignatureMultiAgentSignature{
+			Type:      rpcmodule.MultiAgentSignature,
+			Sender: rpcmodule.Signature{
+				Type: rpcmodule.Ed25519Signature,
+				Object: rpcmodule.SignatureEd25519Signature{
+					Type:      rpcmodule.Ed25519Signature,
+					PublicKey: "0x" + userWallet.PublicKey().String(),
+					Signature: "0x" + hex.EncodeToString(signature1),
+				},
+			},
+			SecondarySignerAddresses: []string{swapAddress},
+			SecondarySigners: []rpcmodule.Signature{
+				{
+					Type: rpcmodule.Ed25519Signature,
+					Object: rpcmodule.SignatureEd25519Signature{
+						Type:      rpcmodule.Ed25519Signature,
+						PublicKey: "0x" + swapWallet.PublicKey().String(),
+						Signature: "0x" + hex.EncodeToString(signature2),
+					},
+				},
+			},
 		},
 	})
 	if err != nil {

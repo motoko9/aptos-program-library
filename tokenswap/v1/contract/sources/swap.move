@@ -17,8 +17,8 @@ module NamedAddr::swap {
     }
 
     public entry fun create_pool<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
-        coinswap: &signer,
         requester: &signer,
+        coinswap: &signer,
         coin1: u64,
         coin2: u64,
         share: u64
@@ -54,8 +54,8 @@ module NamedAddr::swap {
     }
 
     public entry fun coin1_to_coin2_swap_input<CoinType1: drop + store, CoinType2: drop + store> (
-        coinswap: &signer,
         requester: &signer,
+        coinswap: &signer,
         coin1: u64
     ) acquires LiquidityPool {
         let coinswap_addr = signer::address_of(coinswap);
@@ -74,8 +74,8 @@ module NamedAddr::swap {
     }
 
     public entry fun add_liquidity<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
-        coinswap: &signer,
         requester: &signer,
+        coinswap: &signer,
         coin1: u64,
         coin2: u64,
     ) acquires LiquidityPool {
@@ -112,8 +112,8 @@ module NamedAddr::swap {
     }
 
     public entry fun remove_liquidity<CoinType1: drop + store, CoinType2: drop + store, LpType: drop + store>(
+        requester: &signer,
         coinswap: &signer,
-        requester: &signer, 
         share: u64,     
     ) acquires LiquidityPool {
         let coinswap_addr = signer::address_of(coinswap);
