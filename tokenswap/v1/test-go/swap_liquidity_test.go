@@ -42,11 +42,15 @@ func TestAddLiquidity(t *testing.T) {
 	// create pool
 	coin1 := aptos.CoinType[aptos.AptosCoin]
 	coin2 := aptos.CoinType[aptos.USDTCoin]
+	lp := "0x65631df1ec5a46f37dcf64c4606e394e3e371a83b02072eb4c4c20d0795fe82e::lp::LP"
 	payload := rpcmodule.TransactionPayloadEntryFunctionPayload{
 		Type:          "entry_function_payload",
 		Function:      fmt.Sprintf("%s::swap::add_liquidity", swapAddress),
-		TypeArguments: []string{coin1, coin2},
-		Arguments:     []interface{}{},
+		TypeArguments: []string{coin1, coin2, lp},
+		Arguments:     []interface{}{
+			fmt.Sprintf("%d", 10000),
+			fmt.Sprintf("%d", 100000000),
+		},
 	}
 	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
 		userAddress, userAccount.SequenceNumber,
@@ -154,11 +158,14 @@ func TestRemoveLiquidity(t *testing.T) {
 	// create pool
 	coin1 := aptos.CoinType[aptos.AptosCoin]
 	coin2 := aptos.CoinType[aptos.USDTCoin]
+	lp := "0x65631df1ec5a46f37dcf64c4606e394e3e371a83b02072eb4c4c20d0795fe82e::lp::LP"
 	payload := rpcmodule.TransactionPayloadEntryFunctionPayload{
 		Type:          "entry_function_payload",
 		Function:      fmt.Sprintf("%s::swap::remove_liquidity", swapAddress),
-		TypeArguments: []string{coin1, coin2},
-		Arguments:     []interface{}{},
+		TypeArguments: []string{coin1, coin2, lp},
+		Arguments:     []interface{}{
+			fmt.Sprintf("%d", 100),
+		},
 	}
 	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
 		userAddress, userAccount.SequenceNumber,

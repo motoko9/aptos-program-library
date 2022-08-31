@@ -46,7 +46,9 @@ func TestSwap(t *testing.T) {
 		Type:          "entry_function_payload",
 		Function:      fmt.Sprintf("%s::swap::coin1_to_coin2_swap_input", swapAddress),
 		TypeArguments: []string{coin1, coin2},
-		Arguments:     []interface{}{},
+		Arguments:     []interface{}{
+			fmt.Sprintf("%d", 100),
+		},
 	}
 	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
 		userAddress, userAccount.SequenceNumber,
