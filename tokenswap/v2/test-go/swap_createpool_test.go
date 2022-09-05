@@ -14,7 +14,7 @@ func TestCreatePool(t *testing.T) {
 	ctx := context.Background()
 
 	// swap Module account
-	swapWallet, err := wallet.LoadFromKeygenFile("account_swap")
+	swapWallet, err := wallet.NewFromKeygenFile("account_swap")
 	if err != nil {
 		panic(err)
 	}

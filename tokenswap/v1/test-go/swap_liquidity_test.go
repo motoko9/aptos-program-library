@@ -52,17 +52,14 @@ func TestAddLiquidity(t *testing.T) {
 			fmt.Sprintf("%d", 100000000),
 		},
 	}
-	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
+	encodeSubmissionReq := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
 		userAddress, userAccount.SequenceNumber,
-		rpcmodule.TransactionPayload{
+		&rpcmodule.TransactionPayload{
 			Type:   "entry_function_payload",
 			Object: payload,
 		},
 		[]string{swapAddress},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	// sign message
 	signData, aptosErr := client.EncodeSubmission(ctx, encodeSubmissionReq)
@@ -82,7 +79,7 @@ func TestAddLiquidity(t *testing.T) {
 	}
 
 	// add signature
-	submitReq, err := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.Signature{
+	submitReq := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.Signature{
 		Type: rpcmodule.MultiAgentSignature,
 		Object: rpcmodule.SignatureMultiAgentSignature{
 			Type:      rpcmodule.MultiAgentSignature,
@@ -107,9 +104,6 @@ func TestAddLiquidity(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
 
 	// submit
 	txHash, aptosErr := client.SubmitTransaction(ctx, submitReq)
@@ -167,17 +161,14 @@ func TestRemoveLiquidity(t *testing.T) {
 			fmt.Sprintf("%d", 100),
 		},
 	}
-	encodeSubmissionReq, err := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
+	encodeSubmissionReq := rpcmodule.EncodeSubmissionWithSecondarySignersReq(
 		userAddress, userAccount.SequenceNumber,
-		rpcmodule.TransactionPayload{
+		&rpcmodule.TransactionPayload{
 			Type:   "entry_function_payload",
 			Object: payload,
 		},
 		[]string{swapAddress},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	// sign message
 	signData, aptosErr := client.EncodeSubmission(ctx, encodeSubmissionReq)
@@ -197,7 +188,7 @@ func TestRemoveLiquidity(t *testing.T) {
 	}
 
 	// add signature
-	submitReq, err := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.Signature{
+	submitReq := rpcmodule.SubmitTransactionReq(encodeSubmissionReq, rpcmodule.Signature{
 		Type: rpcmodule.MultiAgentSignature,
 		Object: rpcmodule.SignatureMultiAgentSignature{
 			Type:      rpcmodule.MultiAgentSignature,
@@ -222,9 +213,6 @@ func TestRemoveLiquidity(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
 
 	// submit
 	txHash, aptosErr := client.SubmitTransaction(ctx, submitReq)

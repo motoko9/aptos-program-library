@@ -16,7 +16,7 @@ func TestNewSwapAccount(t *testing.T) {
 
 	// new account
 	wallet := wallet.New()
-	wallet.Save("account_swap")
+	wallet.SaveToKeygenFile("account_swap")
 	address := wallet.Address()
 	fmt.Printf("address: %s\n", address)
 
@@ -94,7 +94,7 @@ func TestNewUserAccount(t *testing.T) {
 
 	// new account
 	wallet := wallet.New()
-	wallet.Save("account_user")
+	wallet.SaveToKeygenFile("account_user")
 	address := wallet.Address()
 	fmt.Printf("user address: %s\n", address)
 

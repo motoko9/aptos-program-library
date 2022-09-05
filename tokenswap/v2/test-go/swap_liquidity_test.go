@@ -15,14 +15,14 @@ func TestAddLiquidity(t *testing.T) {
 	ctx := context.Background()
 
 	// swap account
-	swapWallet, err := wallet.LoadFromKeygenFile("account_swap")
+	swapWallet, err := wallet.NewFromKeygenFile("account_swap")
 	if err != nil {
 		panic(err)
 	}
 	swapAddress := swapWallet.Address()
 	fmt.Printf("swap rpcmodule publish address: %s\n", swapAddress)
 
-	userWallet, err := wallet.LoadFromKeygenFile("account_user")
+	userWallet, err := wallet.NewFromKeygenFile("account_user")
 	if err != nil {
 		panic(err)
 	}

@@ -16,7 +16,7 @@ func TestNewSwapAccount(t *testing.T) {
 
 	// new account
 	wallet := wallet.New()
-	wallet.Save("account_swap")
+	wallet.SaveToKeygenFile("account_swap")
 	address := wallet.Address()
 	fmt.Printf("address: %s\n", address)
 
@@ -52,7 +52,7 @@ func TestReadSwapAccount(t *testing.T) {
 	ctx := context.Background()
 
 	// new account
-	wallet, err := wallet.LoadFromKeygenFile("account_swap")
+	wallet, err := wallet.NewFromKeygenFile("account_swap")
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func TestNewUserAccount(t *testing.T) {
 
 	// new account
 	wallet := wallet.New()
-	wallet.Save("account_user")
+	wallet.SaveToKeygenFile("account_user")
 	address := wallet.Address()
 	fmt.Printf("user address: %s\n", address)
 
@@ -130,7 +130,7 @@ func TestReadUserAccount(t *testing.T) {
 	ctx := context.Background()
 
 	// new account
-	wallet, err := wallet.LoadFromKeygenFile("account_user")
+	wallet, err := wallet.NewFromKeygenFile("account_user")
 	if err != nil {
 		panic(err)
 	}
