@@ -4,32 +4,31 @@ module NamedAddr::swap {
     use std::string;
     use std::option;
     use aptos_std::coin;
-    use aptos_std::coins;
+    use aptos_std::managed_coin;
 
     /// Address of the owner of this module
     const Owner: address = @NamedAddr;
 
     const ERROR_COINSWAP_ADDRESS: u64 = 0;
     const ERROR_POOL: u64 = 1;
-    const ERROR_ROUTER_Y_OUT_LESSTHAN_EXPECTED: u64 = 2;
+    const ERROR_OUT_LESSTHAN_EXPECTED: u64 = 2;
 
     // pool liquidity token
-    struct LiquidityToken<phantom CoinType1, phantom CoinType2> has key, store, copy, drop {
-    }
+    struct LiquidityToken<phantom CoinType1, phantom CoinType2> {}
 
-    struct LiquidityTokenCapability<phantom CoinType1, phantom CoinType2> has key, store {
+    struct LiquidityTokenCapability<phantom CoinType1, phantom CoinType2> has key {
         mint: coin::MintCapability<LiquidityToken<CoinType1, CoinType2>>,
         freeze: coin::FreezeCapability<LiquidityToken<CoinType1, CoinType2>>,
         burn: coin::BurnCapability<LiquidityToken<CoinType1, CoinType2>>,
     }
 
-    struct LiquidityPool<phantom CoinType1, phantom CoinType2> has key, store {
+    struct LiquidityPool<phantom CoinType1, phantom CoinType2> has key {
         coin1_reserve: coin::Coin<CoinType1>,
         coin2_reserve: coin::Coin<CoinType2>,
     }
 
     // Create a pool at @CoinSwap.
-    public entry fun create_pool<CoinType1: drop + store, CoinType2: drop + store>(
+    public entry fun create_pool<CoinType1, CoinType2>(
         coinswap: &signer,
     ) {
         let coinswap_addr = signer::address_of(coinswap);
@@ -63,37 +62,32 @@ module NamedAddr::swap {
         });
     }
 
-    fun get_reserves<CoinType1: drop + store, CoinType2: drop + store>(): (u64, u64) acquires LiquidityPool {
+    fun get_reserves<CoinType1, CoinType2>(): (u64, u64) acquires LiquidityPool {
         let pool = borrow_global_mut<LiquidityPool<CoinType1, CoinType2>>(Owner);
         let reserve1 = coin::value(&pool.coin1_reserve);
         let reserve2 = coin::value(&pool.coin2_reserve);
         (reserve1, reserve2)
     }
 
-    fun get_total_supply<CoinType: drop + store>(): u64 {
+    fun get_total_supply<CoinType>(): u64 {
         let supply = coin::supply<CoinType>();
-        // todo 
         let total_supply = option::extract(&mut supply);
         (total_supply as u64)
     }
 
-    fun compute_y_out<CoinType1: copy + drop + store, CoinType2: copy + drop + store>(amount1_in: u64): u64 acquires LiquidityPool {
+    fun compute_y_out<CoinType1, CoinType2>(amount1_in: u64): u64 acquires LiquidityPool {
         // calculate actual y out
         // ignore fee,
-        // todo
-        // check......
         let (reserve1, reserve2) = get_reserves<CoinType1, CoinType2>();
         let denominator = reserve1 + amount1_in;
         let r = mul_div(reserve1, reserve2, denominator);
         reserve2 - r
     }
 
-    fun swap_a_to_b<CoinType1: drop + store, CoinType2: drop + store>(
+    fun swap_a_to_b<CoinType1, CoinType2>(
         coin1_in: coin::Coin<CoinType1>,
         value2_out: u64,
     ): (coin::Coin<CoinType2>) acquires LiquidityPool {
-        //let value1_in = coin::value(&coin1_in);
-        //let (reserve1, reserve2) = get_reservers<CoinType1, CoinType2>();
         let pool = borrow_global_mut<LiquidityPool<CoinType1, CoinType2>>(Owner);
 
         // deposit coin1 into pool
@@ -101,26 +95,24 @@ module NamedAddr::swap {
 
         // withdraw coin2 from pool
         let coin2_out = coin::extract(&mut pool.coin2_reserve, value2_out);
-
-        //
         coin2_out
     }
 
     // only for swap coin1 to coin2
     // todo
-    public entry fun swap<CoinType1: copy + drop + store, CoinType2: copy + drop + store> (
+    public entry fun swap<CoinType1, CoinType2> (
         account: &signer,
         amount1_in: u64,
         amount2_out_min: u64,
     ) acquires LiquidityPool {
         // sender need to accept swap coin
         if (!coin::is_account_registered<CoinType2>(signer::address_of(account))) {
-            coins::register<CoinType2>(account);
+            managed_coin::register<CoinType2>(account);
         };
 
         //
         let amount2_out = compute_y_out<CoinType1, CoinType2>(amount1_in);
-        assert!(amount2_out >= amount2_out_min, ERROR_ROUTER_Y_OUT_LESSTHAN_EXPECTED);
+        assert!(amount2_out >= amount2_out_min, ERROR_OUT_LESSTHAN_EXPECTED);
 
         // try to swap
         // withdraw coin1 from sender
@@ -130,6 +122,9 @@ module NamedAddr::swap {
         let coin2_out = swap_a_to_b<CoinType1, CoinType2>(coin1_in, amount2_out);
        
        // deposit coin2 to sender
+        if (!coin::is_account_registered<CoinType2>(signer::address_of(account))) {
+            managed_coin::register<CoinType2>(account);
+        };
        coin::deposit(signer::address_of(account), coin2_out);
     }
 
@@ -149,35 +144,33 @@ module NamedAddr::swap {
     }
 
     fun sqrt(x: u64): u64 {
-        x
+        x / 1000000
     }
 
-    fun calculate_amount_for_liquidity<CoinType1: drop + store, CoinType2: drop + store>(
+    fun calculate_amount_for_liquidity<CoinType1, CoinType2>(
         coin1_desired: u64,
         coin2_desired: u64,
         coin1_min: u64,
         coin2_min: u64,     
     ): (u64, u64) acquires LiquidityPool {
         let (reserve1, reserve2) = get_reserves<CoinType1, CoinType2>();
-        if (reserve1 == 0 && reserve2 == 0) {
+        if (reserve1 == 0 || reserve2 == 0) {
             return (coin1_desired, coin2_desired)
         };
-        // todo
-        // check......
-        let amount_y_optimal = quote(coin1_desired, reserve2, reserve1);
+        //
+        let amount_y_optimal = quote(coin1_desired, reserve1, reserve2);
         if (amount_y_optimal <= coin2_desired) {
             return (coin1_desired, amount_y_optimal)
         };
-        let amount_x_optimal = quote(coin2_desired, reserve1, reserve2);
+        let amount_x_optimal = quote(coin2_desired, reserve2, reserve1);
         return (amount_x_optimal, coin2_desired)
     }
 
-    fun mint<CoinType1: drop + store, CoinType2: drop + store>(
+    fun mint<CoinType1, CoinType2>(
         coin1: coin::Coin<CoinType1>,
         coin2: coin::Coin<CoinType2>,
     ): coin::Coin<LiquidityToken<CoinType1, CoinType2>> acquires LiquidityPool, LiquidityTokenCapability {
         // calcuate liquidity
-        //let total_supply = coin::supply<LiquidityToken<CoinType1, CoinType2>>();
         let total_supply = get_total_supply<LiquidityToken<CoinType1, CoinType2>>();
         let (reserve1, reserve2) = get_reserves<CoinType1, CoinType2>();
         let amount1 = coin::value<CoinType1>(&coin1);
@@ -202,12 +195,10 @@ module NamedAddr::swap {
         // mint liquidity coin
         let liquidity_cap = borrow_global<LiquidityTokenCapability<CoinType1, CoinType2>>(Owner);
         let mint_token = coin::mint(liquidity, &liquidity_cap.mint);
-
-        //
         mint_token
     }
 
-    public entry fun add_liquidity<CoinType1: drop + store, CoinType2: drop + store>(
+    public entry fun add_liquidity<CoinType1, CoinType2>(
         account: &signer,
         coin1_desired: u64,
         coin2_desired: u64,
@@ -231,21 +222,20 @@ module NamedAddr::swap {
 
         // try to deposit liquidity coin to sender
         if (!coin::is_account_registered<LiquidityToken<CoinType1, CoinType2>>(signer::address_of(account))) {
-            coins::register<LiquidityToken<CoinType1, CoinType2>>(account);
+            managed_coin::register<LiquidityToken<CoinType1, CoinType2>>(account);
         };
         coin::deposit(signer::address_of(account), liquidity_coin);
     }
 
-    fun burn<CoinType1: drop + store, CoinType2: drop + store> (
+    fun burn<CoinType1, CoinType2> (
         liquidity: coin::Coin<LiquidityToken<CoinType1, CoinType2>>,
     ): (coin::Coin<CoinType1>, coin::Coin<CoinType2>) acquires LiquidityPool, LiquidityTokenCapability {
         // calcuate amount
         let to_burn_value = coin::value(&liquidity);
+        let total_supply = get_total_supply<LiquidityToken<CoinType1, CoinType2>>();
         let pool = borrow_global_mut<LiquidityPool<CoinType1, CoinType2>>(Owner);
         let reserve1 = coin::value(&pool.coin1_reserve);
         let reserve2 = coin::value(&pool.coin2_reserve);
-        //let total_supply = coin::supply<LiquidityToken<CoinType1, CoinType2>>();
-        let total_supply = get_total_supply<LiquidityToken<CoinType1, CoinType2>>();
         let amount1 = mul_div(to_burn_value, reserve1, total_supply);
         let amount2 = mul_div(to_burn_value, reserve2, total_supply);
         
@@ -260,7 +250,7 @@ module NamedAddr::swap {
         (coin1, coin2)
     }
 
-    public entry fun remove_liquidity<CoinType1: drop + store, CoinType2: drop + store>(
+    public entry fun remove_liquidity<CoinType1, CoinType2>(
         account: &signer,
         liquidity: u64,
         amount1_min: u64,
@@ -273,7 +263,13 @@ module NamedAddr::swap {
         let (coin1, coin2) = burn(liquidity_coin);
 
         // deposit swap coins to sender
+        if (!coin::is_account_registered<CoinType1>(signer::address_of(account))) {
+            managed_coin::register<CoinType1>(account);
+        };
         coin::deposit(signer::address_of(account), coin1);
+        if (!coin::is_account_registered<CoinType2>(signer::address_of(account))) {
+            managed_coin::register<CoinType2>(account);
+        };
         coin::deposit(signer::address_of(account), coin2);
     }
 }
